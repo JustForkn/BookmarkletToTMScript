@@ -3,39 +3,74 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bookmarklet → Userscript</title>
+<title>Bookmarklet To Tampermonkey Script Converter</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap');
 
   :root{
-    --bg: #12161c;
-    --panel: #1a2029;
-    --panel-raised: #202834;
-    --line: #2b3442;
-    --text: #e4e8ee;
-    --text-dim: #8892a0;
-    --amber: #e0a83e;
-    --amber-dim: #6b5828;
-    --green: #6bbf8f;
-    --red: #d9705f;
-    --mono: 'IBM Plex Mono', monospace;
-    --sans: 'Space Grotesk', sans-serif;
+    --bg: #000000;
+    --panel: rgba(3, 16, 5, 0.88);
+    --panel-alt: rgba(6, 26, 10, 0.92);
+    --border: #155225;
+    --border-bright: #2fcf52;
+    --text: #4dff7f;
+    --text-strong: #a8ffc0;
+    --text-dim: rgba(77, 255, 127, 0.55);
+    --warn: #ff5252;
+    --mono: 'Share Tech Mono', 'IBM Plex Mono', monospace;
+    --glow-sm: 0 0 4px rgba(77,255,127,.5);
+    --glow-md: 0 0 10px rgba(77,255,127,.45);
   }
 
   * { box-sizing: border-box; }
 
+  ::selection{ background: rgba(77,255,127,0.3); color: #fff; }
+
+  ::-webkit-scrollbar{ width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track{ background: #000; }
+  ::-webkit-scrollbar-thumb{ background: var(--border); border-radius: 5px; }
+  ::-webkit-scrollbar-thumb:hover{ background: var(--border-bright); }
+
+  html, body{
+    background: var(--bg);
+  }
+
   body{
     margin:0;
-    background: var(--bg);
     color: var(--text);
-    font-family: var(--sans);
+    font-family: var(--mono);
     min-height:100vh;
     padding: 48px 20px 80px;
+    position: relative;
+  }
+
+  #matrixRain{
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    display: block;
+  }
+
+  body::after{
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 2px,
+      rgba(0,0,0,0.18) 3px
+    );
+    mix-blend-mode: multiply;
   }
 
   .wrap{
-    max-width: 760px;
+    max-width: 780px;
     margin: 0 auto;
+    position: relative;
+    z-index: 2;
   }
 
   header{
@@ -43,34 +78,49 @@
   }
 
   .kicker{
-    font-family: var(--mono);
-    font-size: 13px;
-    color: var(--amber);
-    margin: 0 0 10px;
+    font-size: 14px;
+    color: var(--text-strong);
+    text-shadow: var(--glow-sm);
+    margin: 0 0 14px;
   }
 
+  .cursor{
+    display: inline-block;
+    width: 9px;
+    height: 15px;
+    background: var(--text-strong);
+    box-shadow: var(--glow-sm);
+    margin-left: 2px;
+    animation: blink 1s steps(1) infinite;
+    vertical-align: -2px;
+  }
+  @keyframes blink{ 50%{ opacity: 0; } }
+
   h1{
-    font-size: 32px;
-    font-weight: 600;
-    margin: 0 0 12px;
-    line-height: 1.25;
-    letter-spacing: -0.01em;
+    font-size: 30px;
+    font-weight: 400;
+    margin: 0 0 14px;
+    line-height: 1.3;
+    color: var(--text-strong);
+    text-shadow: var(--glow-md);
+    letter-spacing: 0.01em;
   }
 
   header p{
     color: var(--text-dim);
-    font-size: 15px;
-    line-height: 1.6;
-    max-width: 58ch;
+    font-size: 14.5px;
+    line-height: 1.7;
+    max-width: 62ch;
     margin: 0;
   }
 
   .stage{
     background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 28px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 26px;
     margin-bottom: 20px;
+    box-shadow: 0 0 24px rgba(0,0,0,0.6), inset 0 0 30px rgba(20,90,40,0.06);
   }
 
   .stage-head{
@@ -78,64 +128,75 @@
     align-items: baseline;
     gap: 12px;
     margin-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
   }
 
   .stage-num{
-    font-family: var(--mono);
     font-size: 13px;
-    color: var(--amber);
-    border: 1px solid var(--amber-dim);
-    border-radius: 5px;
-    width: 24px;
-    height: 24px;
+    color: #000;
+    background: var(--text);
+    box-shadow: var(--glow-sm);
+    border-radius: 3px;
+    width: 22px;
+    height: 22px;
     display:flex;
     align-items:center;
     justify-content:center;
     flex-shrink:0;
+    font-weight: bold;
   }
 
   .stage-title{
-    font-size: 17px;
-    font-weight: 600;
+    font-size: 16.5px;
+    color: var(--text-strong);
+    text-shadow: var(--glow-sm);
   }
 
+  .sub-head{
+    font-size: 12.5px;
+    color: var(--text-dim);
+    margin: 22px 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px dashed var(--border);
+  }
+  .sub-head:first-of-type{ margin-top: 0; }
+
   #dropzone{
-    border: 1.5px dashed var(--line);
-    border-radius: 8px;
-    padding: 36px 20px;
+    border: 1.5px dashed var(--border);
+    border-radius: 4px;
+    padding: 32px 20px;
     text-align: center;
     transition: border-color .15s ease, background .15s ease;
     cursor: default;
   }
 
   #dropzone.hover{
-    border-color: var(--amber);
-    background: rgba(224,168,62,0.06);
+    border-color: var(--border-bright);
+    background: rgba(77,255,127,0.06);
   }
 
   #dropzone.filled{
     border-style: solid;
-    border-color: var(--green);
-    background: rgba(107,191,143,0.06);
+    border-color: var(--border-bright);
+    background: rgba(77,255,127,0.05);
   }
 
   .drop-icon{
-    font-family: var(--mono);
-    font-size: 22px;
+    font-size: 20px;
     color: var(--text-dim);
     margin-bottom: 10px;
+    text-shadow: var(--glow-sm);
   }
 
-  #dropzone.filled .drop-icon{ color: var(--green); }
-
   .drop-label{
-    font-size: 14.5px;
-    color: var(--text);
+    font-size: 14px;
+    color: var(--text-strong);
     margin: 0 0 4px;
   }
 
   .drop-sub{
-    font-size: 13px;
+    font-size: 12.5px;
     color: var(--text-dim);
     margin: 0;
   }
@@ -152,14 +213,14 @@
     user-select: none;
   }
 
-  .or-paste summary:hover{ color: var(--text); }
+  .or-paste summary:hover{ color: var(--text-strong); }
 
   textarea.paste-input{
     width: 100%;
     margin-top: 10px;
-    background: var(--panel-raised);
-    border: 1px solid var(--line);
-    border-radius: 6px;
+    background: #000;
+    border: 1px solid var(--border);
+    border-radius: 4px;
     color: var(--text);
     font-family: var(--mono);
     font-size: 12.5px;
@@ -167,20 +228,6 @@
     resize: vertical;
     min-height: 70px;
   }
-
-  .paste-go{
-    margin-top: 8px;
-    font-family: var(--sans);
-    font-size: 13px;
-    font-weight: 600;
-    background: var(--panel-raised);
-    border: 1px solid var(--line);
-    color: var(--text);
-    padding: 7px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-  }
-  .paste-go:hover{ border-color: var(--amber); }
 
   fieldset{
     border: none;
@@ -192,6 +239,7 @@
   }
 
   fieldset.stack{ grid-template-columns: 1fr; }
+  fieldset.three{ grid-template-columns: 1fr 1fr 1fr; }
 
   .field{
     display:flex;
@@ -202,23 +250,60 @@
   .field.full{ grid-column: 1 / -1; }
 
   label{
-    font-size: 12.5px;
+    font-size: 12px;
     color: var(--text-dim);
   }
 
+  input[type=text], select, textarea{
+    accent-color: var(--text);
+  }
+
   input[type=text]{
-    background: var(--panel-raised);
-    border: 1px solid var(--line);
-    border-radius: 6px;
+    background: #000;
+    border: 1px solid var(--border);
+    border-radius: 4px;
     color: var(--text);
     font-family: var(--mono);
     font-size: 13px;
     padding: 9px 10px;
   }
 
+  select{
+    background: #000;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 9px 10px;
+    width: 100%;
+  }
+
   input[type=text]:focus, textarea:focus, select:focus{
     outline: none;
-    border-color: var(--amber);
+    border-color: var(--border-bright);
+    box-shadow: 0 0 6px rgba(47,207,82,0.4);
+  }
+
+  input[type=checkbox]{
+    width: 15px;
+    height: 15px;
+  }
+
+  .icon-row{
+    display:flex;
+    gap: 10px;
+    align-items:center;
+  }
+  .icon-row input{ flex: 1; }
+  #iconPreview{
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    display: none;
+    object-fit: contain;
+    background: #000;
   }
 
   .radio-row{
@@ -230,8 +315,8 @@
   .radio-opt{
     flex: 1;
     min-width: 200px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
     padding: 12px 14px;
     cursor: pointer;
     display:flex;
@@ -239,18 +324,19 @@
     align-items:flex-start;
   }
 
-  .radio-opt:hover{ border-color: #3a4556; }
+  .radio-opt:hover{ border-color: var(--border-bright); }
 
   .radio-opt.checked{
-    border-color: var(--amber);
-    background: rgba(224,168,62,0.06);
+    border-color: var(--border-bright);
+    background: rgba(77,255,127,0.06);
+    box-shadow: var(--glow-sm);
   }
 
   .radio-opt input{ margin-top: 3px; }
 
   .radio-opt .rt-title{
     font-size: 13.5px;
-    font-weight: 600;
+    color: var(--text-strong);
     margin-bottom: 2px;
   }
 
@@ -259,6 +345,20 @@
     color: var(--text-dim);
     line-height: 1.4;
   }
+
+  .grant-grid{
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px 16px;
+  }
+  .grant-item{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--text);
+  }
+  .grant-item code{ color: var(--text-strong); }
 
   #configArea{
     opacity: 0.35;
@@ -271,22 +371,22 @@
   }
 
   pre#output{
-    background: #0d1117;
-    border: 1px solid var(--line);
-    border-radius: 8px;
+    background: #000;
+    border: 1px solid var(--border);
+    border-radius: 4px;
     padding: 18px;
     font-family: var(--mono);
     font-size: 12.5px;
     line-height: 1.65;
     overflow-x: auto;
     white-space: pre;
-    color: #c9d1d9;
+    color: var(--text);
     max-height: 420px;
   }
 
-  .kw{ color: #ff7b72; }
-  .str{ color: #a5d6ff; }
-  .com{ color: #6b7280; }
+  .kw{ color: #ff5c8a; }
+  .str{ color: #7fe8ff; }
+  .com{ color: rgba(77,255,127,0.45); }
 
   .actions{
     display:flex;
@@ -296,27 +396,29 @@
   }
 
   button.primary, button.secondary{
-    font-family: var(--sans);
-    font-weight: 600;
+    font-family: var(--mono);
     font-size: 13.5px;
     padding: 10px 18px;
-    border-radius: 7px;
+    border-radius: 4px;
     cursor: pointer;
     border: 1px solid transparent;
   }
 
   button.primary{
-    background: var(--amber);
-    color: #1a1408;
+    background: var(--text);
+    color: #001a06;
+    border-color: var(--border-bright);
+    box-shadow: var(--glow-sm);
+    font-weight: bold;
   }
-  button.primary:hover{ background: #eab654; }
+  button.primary:hover{ background: var(--text-strong); }
 
   button.secondary{
     background: transparent;
-    border-color: var(--line);
+    border-color: var(--border);
     color: var(--text);
   }
-  button.secondary:hover{ border-color: var(--text-dim); }
+  button.secondary:hover{ border-color: var(--border-bright); color: var(--text-strong); }
 
   button:disabled{
     opacity: 0.4;
@@ -330,7 +432,7 @@
     margin-top: 14px;
   }
 
-  .note a{ color: var(--amber); }
+  .note code{ color: var(--text); }
 
   .empty-output{
     color: var(--text-dim);
@@ -339,18 +441,39 @@
     text-align: center;
   }
 
+  details.adv{
+    margin-top: 20px;
+    border-top: 1px dashed var(--border);
+    padding-top: 14px;
+  }
+  details.adv summary{
+    font-size: 12.5px;
+    color: var(--text-dim);
+    cursor: pointer;
+    user-select: none;
+  }
+  details.adv summary:hover{ color: var(--text-strong); }
+  details.adv[open] summary{ margin-bottom: 16px; }
+
   @media (max-width: 560px){
-    fieldset{ grid-template-columns: 1fr; }
+    fieldset, fieldset.three{ grid-template-columns: 1fr; }
+    .grant-grid{ grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .cursor{ animation: none; }
   }
 </style>
 </head>
 <body>
+<canvas id="matrixRain"></canvas>
+
 <div class="wrap">
 
   <header>
-    <p class="kicker">bookmarklet → tampermonkey</p>
+    <p class="kicker">$ ./convert_bookmarklet.sh<span class="cursor"></span></p>
     <h1>Turn a bookmarklet into a userscript</h1>
-    <p>Drag a bookmarklet from your bookmarks bar into the box below. It'll pull out the code and wrap it as a Tampermonkey userscript that fires on its own — no click needed.</p>
+    <p>Paste a bookmarklet's code below. It gets wrapped as a full Tampermonkey userscript — name, author, icon, match rules, permissions, all of it — configured to fire on its own, same as clicking the bookmarklet.</p>
   </header>
 
   <div class="stage">
@@ -360,7 +483,7 @@
     </div>
 
     <p class="note" style="margin-top:0;margin-bottom:16px;">
-      Chrome and Edge deliberately block reading a <code>javascript:</code> link's real contents through drag-and-drop — it's a security measure, not something a page can work around. The reliable way in: open your bookmarks manager, right-click the bookmarklet → <strong>Edit</strong>, and copy the text from the URL field. Paste it below.
+      Chrome and Edge block reading a <code>javascript:</code> link's real contents through drag-and-drop — a security measure, not something a page can work around. Open your bookmarks manager, right-click the bookmarklet → <strong style="color:var(--text-strong);">Edit</strong>, and copy the text from the URL field. Paste it below.
     </p>
 
     <textarea class="paste-input" id="pasteInput" placeholder="javascript:(function(){...})();  — paste the full bookmarklet URL, or just the code" style="min-height:110px;"></textarea>
@@ -379,45 +502,77 @@
 
     <details class="or-paste" id="previewWrap" style="display:none;margin-top:14px;">
       <summary>Preview extracted code</summary>
-      <pre id="codePreview" style="background:#0d1117;border:1px solid var(--line);border-radius:6px;padding:12px;font-family:var(--mono);font-size:12px;color:#c9d1d9;white-space:pre-wrap;word-break:break-all;margin-top:10px;max-height:200px;overflow-y:auto;"></pre>
+      <pre id="codePreview" style="background:#000;border:1px solid var(--border);border-radius:4px;padding:12px;font-family:var(--mono);font-size:12px;color:var(--text);white-space:pre-wrap;word-break:break-all;margin-top:10px;max-height:200px;overflow-y:auto;"></pre>
     </details>
   </div>
 
   <div class="stage">
     <div class="stage-head">
       <span class="stage-num">2</span>
-      <span class="stage-title">Set up the script</span>
+      <span class="stage-title">Configure the script</span>
     </div>
 
     <div id="configArea">
-      <div class="actions" style="margin-bottom:20px;">
+      <div class="actions" style="margin-bottom:6px;">
         <button class="primary" id="aiBtn">✨ Analyze with AI</button>
         <span class="drop-sub" id="aiStatus" style="align-self:center;"></span>
       </div>
 
+      <p class="sub-head">Identity</p>
       <fieldset class="stack">
         <div class="field full">
-          <label for="fName">Script name</label>
+          <label for="fName">Script name — @name</label>
           <input type="text" id="fName" value="My Bookmarklet">
         </div>
-        <div class="field full" id="descField" style="display:none;">
-          <label for="fDesc">Description</label>
+      </fieldset>
+      <fieldset style="margin-top:16px;">
+        <div class="field">
+          <label for="fAuthor">Made by — @author</label>
+          <input type="text" id="fAuthor" placeholder="your name or handle">
+        </div>
+        <div class="field">
+          <label for="fVersion">Version — @version</label>
+          <input type="text" id="fVersion" value="1.0">
+        </div>
+      </fieldset>
+      <fieldset style="margin-top:16px;">
+        <div class="field full">
+          <label for="fIcon">Icon URL — @icon</label>
+          <div class="icon-row">
+            <input type="text" id="fIcon" placeholder="https://example.com/icon.png">
+            <img id="iconPreview" alt="">
+          </div>
+        </div>
+      </fieldset>
+      <fieldset style="margin-top:16px;">
+        <div class="field full">
+          <label for="fDesc">Description — @description</label>
           <input type="text" id="fDesc" value="">
         </div>
       </fieldset>
 
+      <p class="sub-head">Where it runs</p>
+      <fieldset class="stack">
+        <div class="field full">
+          <label for="fMatchList">Match patterns — @match (one per line)</label>
+          <textarea class="paste-input" id="fMatchList" style="min-height:60px;">*://*/*</textarea>
+        </div>
+      </fieldset>
       <fieldset style="margin-top:16px;">
         <div class="field">
-          <label for="fMatch">Runs on (@match pattern)</label>
-          <input type="text" id="fMatch" value="*://*/*">
-        </div>
-        <div class="field">
-          <label for="fRunAt">Run timing</label>
-          <select id="fRunAt" style="background:var(--panel-raised);border:1px solid var(--line);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:13px;padding:9px 10px;">
+          <label for="fRunAt">Run timing — @run-at</label>
+          <select id="fRunAt">
             <option value="document-idle" selected>document-idle (page loaded)</option>
             <option value="document-end">document-end (DOM ready)</option>
             <option value="document-start">document-start (before page loads)</option>
           </select>
+        </div>
+        <div class="field">
+          <label style="visibility:hidden;">.</label>
+          <div class="grant-item">
+            <input type="checkbox" id="fNoframes">
+            <label for="fNoframes" style="margin:0;">Don't run inside iframes — @noframes</label>
+          </div>
         </div>
       </fieldset>
 
@@ -440,6 +595,57 @@
           </label>
         </div>
       </div>
+
+      <details class="adv">
+        <summary>Advanced metadata (permissions, exclusions, requires, update URLs…)</summary>
+
+        <p class="sub-head" style="margin-top:0;">Permissions — @grant</p>
+        <div class="grant-grid">
+          <label class="grant-item"><input type="checkbox" class="grant-check" value="GM_setValue"> <code>GM_setValue</code></label>
+          <label class="grant-item"><input type="checkbox" class="grant-check" value="GM_getValue"> <code>GM_getValue</code></label>
+          <label class="grant-item"><input type="checkbox" class="grant-check" value="GM_deleteValue"> <code>GM_deleteValue</code></label>
+          <label class="grant-item"><input type="checkbox" class="grant-check" value="GM_xmlhttpRequest"> <code>GM_xmlhttpRequest</code></label>
+          <label class="grant-item"><input type="checkbox" class="grant-check" value="GM_addStyle"> <code>GM_addStyle</code></label>
+          <label class="grant-item"><input type="checkbox" class="grant-check" value="GM_openInTab"> <code>GM_openInTab</code></label>
+          <label class="grant-item"><input type="checkbox" class="grant-check" value="GM_notification"> <code>GM_notification</code></label>
+          <label class="grant-item"><input type="checkbox" class="grant-check" value="GM_setClipboard"> <code>GM_setClipboard</code></label>
+          <label class="grant-item"><input type="checkbox" class="grant-check" value="unsafeWindow"> <code>unsafeWindow</code></label>
+        </div>
+        <p class="note" style="margin-top:10px;">The on-demand trigger mode above adds <code>GM_registerMenuCommand</code> automatically — no need to check it here.</p>
+
+        <p class="sub-head">Site rules</p>
+        <fieldset class="stack">
+          <div class="field full">
+            <label for="fExcludeList">Exclude patterns — @exclude (one per line, optional)</label>
+            <textarea class="paste-input" id="fExcludeList" style="min-height:50px;"></textarea>
+          </div>
+          <div class="field full">
+            <label for="fConnectList">Allowed domains for requests — @connect (one per line, optional)</label>
+            <textarea class="paste-input" id="fConnectList" style="min-height:50px;"></textarea>
+          </div>
+          <div class="field full">
+            <label for="fRequireList">External scripts to load first — @require (one URL per line, optional)</label>
+            <textarea class="paste-input" id="fRequireList" style="min-height:50px;"></textarea>
+          </div>
+        </fieldset>
+
+        <p class="sub-head">Namespace &amp; updates</p>
+        <fieldset>
+          <div class="field">
+            <label for="fNamespace">Namespace — @namespace</label>
+            <input type="text" id="fNamespace" value="bookmarklet-to-tampermonkey">
+          </div>
+          <div class="field"></div>
+          <div class="field">
+            <label for="fUpdateURL">Update check URL — @updateURL</label>
+            <input type="text" id="fUpdateURL" placeholder="optional">
+          </div>
+          <div class="field">
+            <label for="fDownloadURL">Download URL — @downloadURL</label>
+            <input type="text" id="fDownloadURL" placeholder="optional">
+          </div>
+        </fieldset>
+      </details>
     </div>
   </div>
 
@@ -449,7 +655,7 @@
       <span class="stage-title">Your userscript</span>
     </div>
 
-    <pre id="output"><div class="empty-output">Drop a bookmarklet above to generate the script</div></pre>
+    <pre id="output"><div class="empty-output">Load a bookmarklet above to generate the script</div></pre>
 
     <div class="actions">
       <button class="primary" id="downloadBtn" disabled>Download .user.js</button>
@@ -463,6 +669,47 @@
 
 <script>
 (function(){
+  // ---------- Matrix rain background ----------
+  const canvas = document.getElementById('matrixRain');
+  const ctx = canvas.getContext('2d');
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const glyphs = 'ｦｧｨｩｪｫｬｭｮｯｰｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ0123456789';
+  const fontSize = 15;
+  let columns, drops, w, h;
+
+  function resize(){
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+    columns = Math.floor(w / fontSize);
+    drops = new Array(columns).fill(0).map(()=> Math.random() * -50);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  function frame(){
+    ctx.fillStyle = 'rgba(0,0,0,0.06)';
+    ctx.fillRect(0, 0, w, h);
+    ctx.font = fontSize + 'px monospace';
+    for(let i=0; i<drops.length; i++){
+      const char = glyphs[Math.floor(Math.random() * glyphs.length)];
+      const y = drops[i] * fontSize;
+      ctx.fillStyle = 'rgba(77,255,127,0.85)';
+      ctx.fillText(char, i * fontSize, y);
+      if(y > h && Math.random() > 0.975){
+        drops[i] = 0;
+      }
+      drops[i]++;
+    }
+  }
+
+  if(reduceMotion){
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0,0,w,h);
+  } else {
+    setInterval(frame, 45);
+  }
+
+  // ---------- Elements ----------
   const dropzone = document.getElementById('dropzone');
   const dzLabel = document.getElementById('dzLabel');
   const dzSub = document.getElementById('dzSub');
@@ -475,24 +722,32 @@
   const codePreview = document.getElementById('codePreview');
 
   const fName = document.getElementById('fName');
-  const fMatch = document.getElementById('fMatch');
+  const fAuthor = document.getElementById('fAuthor');
+  const fVersion = document.getElementById('fVersion');
+  const fIcon = document.getElementById('fIcon');
+  const iconPreview = document.getElementById('iconPreview');
+  const fDesc = document.getElementById('fDesc');
+  const fMatchList = document.getElementById('fMatchList');
+  const fExcludeList = document.getElementById('fExcludeList');
+  const fConnectList = document.getElementById('fConnectList');
+  const fRequireList = document.getElementById('fRequireList');
+  const fNamespace = document.getElementById('fNamespace');
+  const fUpdateURL = document.getElementById('fUpdateURL');
+  const fDownloadURL = document.getElementById('fDownloadURL');
   const fRunAt = document.getElementById('fRunAt');
+  const fNoframes = document.getElementById('fNoframes');
   const optAuto = document.getElementById('optAuto');
   const optMenu = document.getElementById('optMenu');
   const configArea = document.getElementById('configArea');
+  const aiBtn = document.getElementById('aiBtn');
+  const aiStatus = document.getElementById('aiStatus');
 
   let extractedCode = null;
 
-  // Returns { code, decodedFrom, error } — never guesses silently.
-  // We only ever call `new Function(code)` to PARSE it (checking syntax),
-  // never to execute it, so this is safe even on untrusted code.
+  // ---------- Extraction (validity-checked, never guesses silently) ----------
   function tryParse(code){
-    try{
-      new Function(code);
-      return true;
-    }catch(e){
-      return false;
-    }
+    try{ new Function(code); return true; }
+    catch(e){ return false; }
   }
 
   function extractFromRaw(raw){
@@ -515,28 +770,17 @@
       decodeError = e.message;
     }
 
-    // Prefer whichever version actually parses. If the raw text parses,
-    // trust it as-is — decoding an already-valid script can corrupt
-    // legitimate "%" characters (modulo operators, percent-encoded
-    // strings the script builds at runtime, etc).
     if(rawValid) return { code: s };
     if(decodedValid) return { code: decoded, decodedFrom: true };
 
-    // Neither parses — surface the real error instead of guessing.
     let firstError = null;
     try{ new Function(s); }catch(e){ firstError = e.message; }
     return { code: null, error: firstError || decodeError || 'Unknown syntax error' };
   }
 
   function setCode(code, sourceLabel){
-    if(!code){
-      markInvalid();
-      return;
-    }
-    if(code === '__BLOCKED__'){
-      markBlocked();
-      return;
-    }
+    if(!code){ markInvalid(); return; }
+    if(code === '__BLOCKED__'){ markBlocked(); return; }
     extractedCode = code;
     dropzone.classList.add('filled');
     dropzone.classList.remove('hover');
@@ -545,10 +789,8 @@
     configArea.classList.add('active');
     downloadBtn.disabled = false;
     copyBtn.disabled = false;
-
     previewWrap.style.display = '';
     codePreview.textContent = code;
-
     render();
   }
 
@@ -563,10 +805,7 @@
     dzSub.textContent = message || 'Use the paste box above and double-check you copied the full bookmarklet URL.';
   }
 
-  // Stop the browser's default "navigate to this javascript: link" behavior
-  // for ANY drag/drop on the page, not just inside the dropzone — a drop
-  // that lands a few pixels outside the box would otherwise silently
-  // trigger a no-op navigation and look like "nothing happened".
+  // ---------- Drag & drop ----------
   ['dragenter','dragover'].forEach(evt=>{
     window.addEventListener(evt, e=> e.preventDefault());
   });
@@ -579,9 +818,7 @@
     });
   });
   ['dragleave','dragend'].forEach(evt=>{
-    dropzone.addEventListener(evt, e=>{
-      dropzone.classList.remove('hover');
-    });
+    dropzone.addEventListener(evt, ()=> dropzone.classList.remove('hover'));
   });
 
   function extractHrefFromHtml(html){
@@ -594,10 +831,7 @@
     e.stopPropagation();
     dropzone.classList.remove('hover');
     const dt = e.dataTransfer;
-    const availableTypes = dt.types ? Array.from(dt.types) : [];
 
-    // Try every format browsers use for a dragged link, in order of
-    // reliability. Firefox favors text/x-moz-url ("URL\nTitle").
     let raw =
       dt.getData('text/uri-list') ||
       dt.getData('text/x-moz-url') ||
@@ -606,16 +840,10 @@
       dt.getData('text/html') ||
       '';
 
-    if(raw && raw.trim().startsWith('<')){
-      raw = extractHrefFromHtml(raw);
-    }
-    // text/x-moz-url format is "url\ntitle" — keep just the url
-    if(raw && raw.includes('\n')){
-      raw = raw.split('\n')[0];
-    }
+    if(raw && raw.trim().startsWith('<')) raw = extractHrefFromHtml(raw);
+    if(raw && raw.includes('\n')) raw = raw.split('\n')[0];
 
     let result = extractFromRaw(raw);
-
     if(result && result.code){
       setCode(result.code, result.decodedFrom
         ? 'Captured and decoded ' + result.code.length + ' characters'
@@ -623,7 +851,6 @@
       return;
     }
 
-    // Fallback: async items API (some browsers only populate this)
     if(dt.items && dt.items.length){
       const item = Array.from(dt.items).find(i => i.kind === 'string');
       if(item){
@@ -656,11 +883,7 @@
     }
   });
 
-  const fDesc = document.getElementById('fDesc');
-  const descField = document.getElementById('descField');
-  const aiBtn = document.getElementById('aiBtn');
-  const aiStatus = document.getElementById('aiStatus');
-
+  // ---------- Trigger mode ----------
   [optAuto, optMenu].forEach(opt=>{
     opt.addEventListener('click', ()=>{
       optAuto.classList.toggle('checked', opt === optAuto);
@@ -669,11 +892,23 @@
     });
   });
 
-  [fName, fMatch, fRunAt, fDesc].forEach(el=>{
+  // ---------- Live re-render on any field change ----------
+  [fName, fAuthor, fVersion, fIcon, fDesc, fMatchList, fExcludeList, fConnectList,
+   fRequireList, fNamespace, fUpdateURL, fDownloadURL, fRunAt, fNoframes].forEach(el=>{
     el.addEventListener('input', render);
     el.addEventListener('change', render);
   });
+  document.querySelectorAll('.grant-check').forEach(cb=> cb.addEventListener('change', render));
 
+  fIcon.addEventListener('input', ()=>{
+    const v = fIcon.value.trim();
+    if(!v){ iconPreview.style.display = 'none'; return; }
+    iconPreview.onload = ()=>{ iconPreview.style.display = 'block'; };
+    iconPreview.onerror = ()=>{ iconPreview.style.display = 'none'; };
+    iconPreview.src = v;
+  });
+
+  // ---------- AI analysis ----------
   aiBtn.addEventListener('click', async ()=>{
     if(!extractedCode){
       aiStatus.textContent = 'Load some code first';
@@ -710,11 +945,8 @@ ${extractedCode}`;
       const parsed = JSON.parse(clean);
 
       if(parsed.name) fName.value = parsed.name;
-      if(parsed.match) fMatch.value = parsed.match;
-      if(parsed.description){
-        fDesc.value = parsed.description;
-        descField.style.display = '';
-      }
+      if(parsed.match) fMatchList.value = parsed.match;
+      if(parsed.description) fDesc.value = parsed.description;
       aiStatus.textContent = parsed.risk_notes || 'Done';
       render();
     }catch(err){
@@ -724,6 +956,7 @@ ${extractedCode}`;
     }
   });
 
+  // ---------- Script generation ----------
   function escapeForComment(s){
     return String(s).replace(/\r?\n/g, ' ').slice(0, 200);
   }
@@ -732,54 +965,77 @@ ${extractedCode}`;
     return code.split('\n').map(l => '    ' + l).join('\n');
   }
 
+  function linesFromTextarea(el){
+    return el.value.split('\n').map(s => s.trim()).filter(Boolean);
+  }
+
+  function metaLine(key, value){
+    return '// ' + (key + '                ').slice(0, 13) + value;
+  }
+
   function buildScript(){
     if(!extractedCode) return '';
 
     const name = fName.value.trim() || 'My Bookmarklet';
-    const match = fMatch.value.trim() || '*://*/*';
+    const author = fAuthor.value.trim();
+    const version = fVersion.value.trim() || '1.0';
+    const icon = fIcon.value.trim();
+    const description = fDesc.value.trim() || ('Converted from a bookmarklet: ' + escapeForComment(extractedCode).slice(0,80));
+    const namespace = fNamespace.value.trim() || 'bookmarklet-to-tampermonkey';
+    const updateURL = fUpdateURL.value.trim();
+    const downloadURL = fDownloadURL.value.trim();
     const runAt = fRunAt.value;
+    const noframes = fNoframes.checked;
     const isMenu = optMenu.classList.contains('checked');
 
-    const grantLine = isMenu ? '// @grant        GM_registerMenuCommand' : '// @grant        none';
+    let matches = linesFromTextarea(fMatchList);
+    if(!matches.length) matches = ['*://*/*'];
+    const excludes = linesFromTextarea(fExcludeList);
+    const requires = linesFromTextarea(fRequireList);
+    const connects = linesFromTextarea(fConnectList);
+
+    let grants = Array.from(document.querySelectorAll('.grant-check:checked')).map(cb => cb.value);
+    if(isMenu && !grants.includes('GM_registerMenuCommand')) grants.push('GM_registerMenuCommand');
+    if(grants.length === 0) grants = ['none'];
+
+    const lines = [];
+    lines.push('// ==UserScript==');
+    lines.push(metaLine('@name', name));
+    lines.push(metaLine('@namespace', namespace));
+    lines.push(metaLine('@version', version));
+    lines.push(metaLine('@description', description));
+    if(author) lines.push(metaLine('@author', author));
+    if(icon) lines.push(metaLine('@icon', icon));
+    matches.forEach(m => lines.push(metaLine('@match', m)));
+    excludes.forEach(m => lines.push(metaLine('@exclude', m)));
+    requires.forEach(u => lines.push(metaLine('@require', u)));
+    connects.forEach(d => lines.push(metaLine('@connect', d)));
+    lines.push(metaLine('@run-at', runAt));
+    grants.forEach(g => lines.push(metaLine('@grant', g)));
+    if(noframes) lines.push('// @noframes');
+    if(updateURL) lines.push(metaLine('@updateURL', updateURL));
+    if(downloadURL) lines.push(metaLine('@downloadURL', downloadURL));
+    lines.push('// ==/UserScript==');
 
     let body;
     if(isMenu){
       body =
-`    function run() {
-${indent(extractedCode)}
+'    function run() {\n' +
+indent(extractedCode) + '\n' +
+'    }\n\n' +
+"    if (typeof GM_registerMenuCommand === 'function') {\n" +
+"        GM_registerMenuCommand('" + name.replace(/'/g, "\\'") + "', run);\n" +
+'    } else {\n' +
+'        run();\n' +
+'    }';
+    } else {
+      body = indent(extractedCode);
     }
 
-    if (typeof GM_registerMenuCommand === 'function') {
-        GM_registerMenuCommand('${name.replace(/'/g,"\\'")}', run);
-    } else {
-        run();
-    }`;
-    } else {
-      body =
-`${indent(extractedCode)}`;
-    }
-
-    return `// ==UserScript==
-// @name         ${name}
-// @namespace    bookmarklet-to-tampermonkey
-// @version      1.0
-// @description  ${(fDesc.value.trim()) || ('Converted from a bookmarklet: ' + escapeForComment(extractedCode).slice(0,80))}
-// @match        ${match}
-// @run-at       ${runAt}
-${grantLine}
-// ==/UserScript==
-
-(function() {
-    'use strict';
-
-${body}
-})();
-`;
+    return lines.join('\n') + '\n\n(function() {\n    \'use strict\';\n\n' + body + '\n})();\n';
   }
 
-  // Tokenize first, THEN escape + wrap each token. Doing find/replace on
-  // already-HTML-wrapped text (the old approach) let later regexes match
-  // inside earlier spans' own attributes, corrupting the markup.
+  // ---------- Syntax highlighting (token-based, no re-matching inside spans) ----------
   function highlight(code){
     const tokenRe = /(\/\/.*$)|('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")|\b(function|const|let|var|if|else|return|typeof|new|for|while)\b/gm;
     let result = '';
@@ -788,13 +1044,9 @@ ${body}
     const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     while((m = tokenRe.exec(code)) !== null){
       result += esc(code.slice(lastIndex, m.index));
-      if(m[1] !== undefined){
-        result += '<span class="com">' + esc(m[1]) + '</span>';
-      } else if(m[2] !== undefined){
-        result += '<span class="str">' + esc(m[2]) + '</span>';
-      } else if(m[3] !== undefined){
-        result += '<span class="kw">' + esc(m[3]) + '</span>';
-      }
+      if(m[1] !== undefined) result += '<span class="com">' + esc(m[1]) + '</span>';
+      else if(m[2] !== undefined) result += '<span class="str">' + esc(m[2]) + '</span>';
+      else if(m[3] !== undefined) result += '<span class="kw">' + esc(m[3]) + '</span>';
       lastIndex = tokenRe.lastIndex;
     }
     result += esc(code.slice(lastIndex));
@@ -803,7 +1055,7 @@ ${body}
 
   function render(){
     if(!extractedCode){
-      output.innerHTML = '<div class="empty-output">Drop a bookmarklet above to generate the script</div>';
+      output.innerHTML = '<div class="empty-output">Load a bookmarklet above to generate the script</div>';
       return;
     }
     const script = buildScript();
@@ -835,7 +1087,6 @@ ${body}
       copyBtn.textContent = 'Copied';
       setTimeout(()=>{ copyBtn.textContent = original; }, 1400);
     }catch(e){
-      // fallback
       const ta = document.createElement('textarea');
       ta.value = script;
       document.body.appendChild(ta);
