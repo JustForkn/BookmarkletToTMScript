@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bookmarklet → Userscript</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --bg: #12161c;
+    --panel: #1a2029;
+    --panel-raised: #202834;
+    --line: #2b3442;
+    --text: #e4e8ee;
+    --text-dim: #8892a0;
+    --amber: #e0a83e;
+    --amber-dim: #6b5828;
+    --green: #6bbf8f;
+    --red: #d9705f;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'Space Grotesk', sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height:100vh;
+    padding: 48px 20px 80px;
+  }
+
+  .wrap{
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  header{
+    margin-bottom: 40px;
+  }
+
+  .kicker{
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--amber);
+    margin: 0 0 10px;
+  }
+
+  h1{
+    font-size: 32px;
+    font-weight: 600;
+    margin: 0 0 12px;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+
+  header p{
+    color: var(--text-dim);
+    font-size: 15px;
+    line-height: 1.6;
+    max-width: 58ch;
+    margin: 0;
+  }
+
+  .stage{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 28px;
+    margin-bottom: 20px;
+  }
+
+  .stage-head{
+    display:flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .stage-num{
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--amber);
+    border: 1px solid var(--amber-dim);
+    border-radius: 5px;
+    width: 24px;
+    height: 24px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+  }
+
+  .stage-title{
+    font-size: 17px;
+    font-weight: 600;
+  }
+
+  #dropzone{
+    border: 1.5px dashed var(--line);
+    border-radius: 8px;
+    padding: 36px 20px;
+    text-align: center;
+    transition: border-color .15s ease, background .15s ease;
+    cursor: default;
+  }
+
+  #dropzone.hover{
+    border-color: var(--amber);
+    background: rgba(224,168,62,0.06);
+  }
+
+  #dropzone.filled{
+    border-style: solid;
+    border-color: var(--green);
+    background: rgba(107,191,143,0.06);
+  }
+
+  .drop-icon{
+    font-family: var(--mono);
+    font-size: 22px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+
+  #dropzone.filled .drop-icon{ color: var(--green); }
+
+  .drop-label{
+    font-size: 14.5px;
+    color: var(--text);
+    margin: 0 0 4px;
+  }
+
+  .drop-sub{
+    font-size: 13px;
+    color: var(--text-dim);
+    margin: 0;
+  }
+
+  .or-paste{
+    margin-top: 16px;
+    text-align: left;
+  }
+
+  .or-paste summary{
+    font-size: 13px;
+    color: var(--text-dim);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .or-paste summary:hover{ color: var(--text); }
+
+  textarea.paste-input{
+    width: 100%;
+    margin-top: 10px;
+    background: var(--panel-raised);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    padding: 10px;
+    resize: vertical;
+    min-height: 70px;
+  }
+
+  .paste-go{
+    margin-top: 8px;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    background: var(--panel-raised);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .paste-go:hover{ border-color: var(--amber); }
+
+  fieldset{
+    border: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  fieldset.stack{ grid-template-columns: 1fr; }
+
+  .field{
+    display:flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .field.full{ grid-column: 1 / -1; }
+
+  label{
+    font-size: 12.5px;
+    color: var(--text-dim);
+  }
+
+  input[type=text]{
+    background: var(--panel-raised);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 9px 10px;
+  }
+
+  input[type=text]:focus, textarea:focus, select:focus{
+    outline: none;
+    border-color: var(--amber);
+  }
+
+  .radio-row{
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .radio-opt{
+    flex: 1;
+    min-width: 200px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px 14px;
+    cursor: pointer;
+    display:flex;
+    gap: 10px;
+    align-items:flex-start;
+  }
+
+  .radio-opt:hover{ border-color: #3a4556; }
+
+  .radio-opt.checked{
+    border-color: var(--amber);
+    background: rgba(224,168,62,0.06);
+  }
+
+  .radio-opt input{ margin-top: 3px; }
+
+  .radio-opt .rt-title{
+    font-size: 13.5px;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+
+  .radio-opt .rt-sub{
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+
+  #configArea{
+    opacity: 0.35;
+    pointer-events: none;
+    transition: opacity .15s ease;
+  }
+  #configArea.active{
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  pre#output{
+    background: #0d1117;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 18px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.65;
+    overflow-x: auto;
+    white-space: pre;
+    color: #c9d1d9;
+    max-height: 420px;
+  }
+
+  .kw{ color: #ff7b72; }
+  .str{ color: #a5d6ff; }
+  .com{ color: #6b7280; }
+
+  .actions{
+    display:flex;
+    gap: 10px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+
+  button.primary, button.secondary{
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 13.5px;
+    padding: 10px 18px;
+    border-radius: 7px;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+
+  button.primary{
+    background: var(--amber);
+    color: #1a1408;
+  }
+  button.primary:hover{ background: #eab654; }
+
+  button.secondary{
+    background: transparent;
+    border-color: var(--line);
+    color: var(--text);
+  }
+  button.secondary:hover{ border-color: var(--text-dim); }
+
+  button:disabled{
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .note{
+    font-size: 12.5px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    margin-top: 14px;
+  }
+
+  .note a{ color: var(--amber); }
+
+  .empty-output{
+    color: var(--text-dim);
+    font-size: 13.5px;
+    padding: 30px 10px;
+    text-align: center;
+  }
+
+  @media (max-width: 560px){
+    fieldset{ grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p class="kicker">bookmarklet → tampermonkey</p>
+    <h1>Turn a bookmarklet into a userscript</h1>
+    <p>Drag a bookmarklet from your bookmarks bar into the box below. It'll pull out the code and wrap it as a Tampermonkey userscript that fires on its own — no click needed.</p>
+  </header>
+
+  <div class="stage">
+    <div class="stage-head">
+      <span class="stage-num">1</span>
+      <span class="stage-title">Get the bookmarklet's code</span>
+    </div>
+
+    <p class="note" style="margin-top:0;margin-bottom:16px;">
+      Chrome and Edge deliberately block reading a <code>javascript:</code> link's real contents through drag-and-drop — it's a security measure, not something a page can work around. The reliable way in: open your bookmarks manager, right-click the bookmarklet → <strong>Edit</strong>, and copy the text from the URL field. Paste it below.
+    </p>
+
+    <textarea class="paste-input" id="pasteInput" placeholder="javascript:(function(){...})();  — paste the full bookmarklet URL, or just the code" style="min-height:110px;"></textarea>
+    <div class="actions" style="margin-top:10px;">
+      <button class="primary" id="pasteGo">Use this code</button>
+    </div>
+
+    <details class="or-paste" style="margin-top:18px;">
+      <summary>Try dragging it in instead (works in Firefox, usually blocked in Chrome)</summary>
+      <div id="dropzone" style="margin-top:12px;">
+        <div class="drop-icon">↓</div>
+        <p class="drop-label" id="dzLabel">Drag a bookmarklet link here</p>
+        <p class="drop-sub" id="dzSub">If you see "about:blank#blocked" after dropping, that's Chrome's block — use the paste box above instead</p>
+      </div>
+    </details>
+
+    <details class="or-paste" id="previewWrap" style="display:none;margin-top:14px;">
+      <summary>Preview extracted code</summary>
+      <pre id="codePreview" style="background:#0d1117;border:1px solid var(--line);border-radius:6px;padding:12px;font-family:var(--mono);font-size:12px;color:#c9d1d9;white-space:pre-wrap;word-break:break-all;margin-top:10px;max-height:200px;overflow-y:auto;"></pre>
+    </details>
+  </div>
+
+  <div class="stage">
+    <div class="stage-head">
+      <span class="stage-num">2</span>
+      <span class="stage-title">Set up the script</span>
+    </div>
+
+    <div id="configArea">
+      <div class="actions" style="margin-bottom:20px;">
+        <button class="primary" id="aiBtn">✨ Analyze with AI</button>
+        <span class="drop-sub" id="aiStatus" style="align-self:center;"></span>
+      </div>
+
+      <fieldset class="stack">
+        <div class="field full">
+          <label for="fName">Script name</label>
+          <input type="text" id="fName" value="My Bookmarklet">
+        </div>
+        <div class="field full" id="descField" style="display:none;">
+          <label for="fDesc">Description</label>
+          <input type="text" id="fDesc" value="">
+        </div>
+      </fieldset>
+
+      <fieldset style="margin-top:16px;">
+        <div class="field">
+          <label for="fMatch">Runs on (@match pattern)</label>
+          <input type="text" id="fMatch" value="*://*/*">
+        </div>
+        <div class="field">
+          <label for="fRunAt">Run timing</label>
+          <select id="fRunAt" style="background:var(--panel-raised);border:1px solid var(--line);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:13px;padding:9px 10px;">
+            <option value="document-idle" selected>document-idle (page loaded)</option>
+            <option value="document-end">document-end (DOM ready)</option>
+            <option value="document-start">document-start (before page loads)</option>
+          </select>
+        </div>
+      </fieldset>
+
+      <div style="margin-top:18px;">
+        <label style="display:block;margin-bottom:8px;">When should it run?</label>
+        <div class="radio-row">
+          <label class="radio-opt checked" id="optAuto">
+            <input type="radio" name="trigger" value="auto" checked>
+            <span>
+              <span class="rt-title">Automatically</span>
+              <span class="rt-sub">Fires by itself on every matching page load — same effect as always clicking the bookmarklet.</span>
+            </span>
+          </label>
+          <label class="radio-opt" id="optMenu">
+            <input type="radio" name="trigger" value="menu">
+            <span>
+              <span class="rt-title">On demand, from Tampermonkey's menu</span>
+              <span class="rt-sub">Adds a menu command so you click to run it, like the bookmarklet, but from the extension icon.</span>
+            </span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="stage-head">
+      <span class="stage-num">3</span>
+      <span class="stage-title">Your userscript</span>
+    </div>
+
+    <pre id="output"><div class="empty-output">Drop a bookmarklet above to generate the script</div></pre>
+
+    <div class="actions">
+      <button class="primary" id="downloadBtn" disabled>Download .user.js</button>
+      <button class="secondary" id="copyBtn" disabled>Copy code</button>
+    </div>
+
+    <p class="note">Downloading the <code>.user.js</code> file and opening it in a browser with Tampermonkey installed will prompt an install automatically. Review the generated code before installing anything — a userscript runs with the same access the bookmarklet had, just on every visit instead of on click.</p>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  const dropzone = document.getElementById('dropzone');
+  const dzLabel = document.getElementById('dzLabel');
+  const dzSub = document.getElementById('dzSub');
+  const output = document.getElementById('output');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const copyBtn = document.getElementById('copyBtn');
+  const pasteInput = document.getElementById('pasteInput');
+  const pasteGo = document.getElementById('pasteGo');
+  const previewWrap = document.getElementById('previewWrap');
+  const codePreview = document.getElementById('codePreview');
+
+  const fName = document.getElementById('fName');
+  const fMatch = document.getElementById('fMatch');
+  const fRunAt = document.getElementById('fRunAt');
+  const optAuto = document.getElementById('optAuto');
+  const optMenu = document.getElementById('optMenu');
+  const configArea = document.getElementById('configArea');
+
+  let extractedCode = null;
+
+  // Returns { code, decodedFrom, error } — never guesses silently.
+  // We only ever call `new Function(code)` to PARSE it (checking syntax),
+  // never to execute it, so this is safe even on untrusted code.
+  function tryParse(code){
+    try{
+      new Function(code);
+      return true;
+    }catch(e){
+      return false;
+    }
+  }
+
+  function extractFromRaw(raw){
+    if(!raw) return null;
+    let s = raw.trim();
+    if(/^about:blank#blocked/i.test(s)){
+      return { code: '__BLOCKED__' };
+    }
+    if(s.toLowerCase().startsWith('javascript:')){
+      s = s.slice('javascript:'.length).trim();
+    }
+
+    const rawValid = tryParse(s);
+
+    let decoded = null, decodedValid = false, decodeError = null;
+    try{
+      decoded = decodeURIComponent(s);
+      decodedValid = tryParse(decoded);
+    }catch(e){
+      decodeError = e.message;
+    }
+
+    // Prefer whichever version actually parses. If the raw text parses,
+    // trust it as-is — decoding an already-valid script can corrupt
+    // legitimate "%" characters (modulo operators, percent-encoded
+    // strings the script builds at runtime, etc).
+    if(rawValid) return { code: s };
+    if(decodedValid) return { code: decoded, decodedFrom: true };
+
+    // Neither parses — surface the real error instead of guessing.
+    let firstError = null;
+    try{ new Function(s); }catch(e){ firstError = e.message; }
+    return { code: null, error: firstError || decodeError || 'Unknown syntax error' };
+  }
+
+  function setCode(code, sourceLabel){
+    if(!code){
+      markInvalid();
+      return;
+    }
+    if(code === '__BLOCKED__'){
+      markBlocked();
+      return;
+    }
+    extractedCode = code;
+    dropzone.classList.add('filled');
+    dropzone.classList.remove('hover');
+    dzLabel.textContent = 'Bookmarklet captured';
+    dzSub.textContent = sourceLabel || (code.length + ' characters of code ready to wrap');
+    configArea.classList.add('active');
+    downloadBtn.disabled = false;
+    copyBtn.disabled = false;
+
+    previewWrap.style.display = '';
+    codePreview.textContent = code;
+
+    render();
+  }
+
+  function markBlocked(){
+    dropzone.classList.remove('filled');
+    dzLabel.textContent = 'Chrome blocked this drag';
+    dzSub.textContent = "That's expected — copy the bookmarklet's URL manually and paste it in the box above instead.";
+  }
+
+  function markInvalid(message){
+    dzLabel.textContent = "Couldn't parse that as JavaScript";
+    dzSub.textContent = message || 'Use the paste box above and double-check you copied the full bookmarklet URL.';
+  }
+
+  // Stop the browser's default "navigate to this javascript: link" behavior
+  // for ANY drag/drop on the page, not just inside the dropzone — a drop
+  // that lands a few pixels outside the box would otherwise silently
+  // trigger a no-op navigation and look like "nothing happened".
+  ['dragenter','dragover'].forEach(evt=>{
+    window.addEventListener(evt, e=> e.preventDefault());
+  });
+  window.addEventListener('drop', e=> e.preventDefault());
+
+  ['dragenter','dragover'].forEach(evt=>{
+    dropzone.addEventListener(evt, e=>{
+      e.preventDefault();
+      dropzone.classList.add('hover');
+    });
+  });
+  ['dragleave','dragend'].forEach(evt=>{
+    dropzone.addEventListener(evt, e=>{
+      dropzone.classList.remove('hover');
+    });
+  });
+
+  function extractHrefFromHtml(html){
+    const m = html.match(/href=["']([^"']+)["']/i);
+    return m ? m[1] : '';
+  }
+
+  dropzone.addEventListener('drop', e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    dropzone.classList.remove('hover');
+    const dt = e.dataTransfer;
+    const availableTypes = dt.types ? Array.from(dt.types) : [];
+
+    // Try every format browsers use for a dragged link, in order of
+    // reliability. Firefox favors text/x-moz-url ("URL\nTitle").
+    let raw =
+      dt.getData('text/uri-list') ||
+      dt.getData('text/x-moz-url') ||
+      dt.getData('URL') ||
+      dt.getData('text/plain') ||
+      dt.getData('text/html') ||
+      '';
+
+    if(raw && raw.trim().startsWith('<')){
+      raw = extractHrefFromHtml(raw);
+    }
+    // text/x-moz-url format is "url\ntitle" — keep just the url
+    if(raw && raw.includes('\n')){
+      raw = raw.split('\n')[0];
+    }
+
+    let result = extractFromRaw(raw);
+
+    if(result && result.code){
+      setCode(result.code, result.decodedFrom
+        ? 'Captured and decoded ' + result.code.length + ' characters'
+        : 'Captured ' + result.code.length + ' characters');
+      return;
+    }
+
+    // Fallback: async items API (some browsers only populate this)
+    if(dt.items && dt.items.length){
+      const item = Array.from(dt.items).find(i => i.kind === 'string');
+      if(item){
+        item.getAsString(str=>{
+          let s = str;
+          if(s && s.trim().startsWith('<')) s = extractHrefFromHtml(s);
+          if(s && s.includes('\n')) s = s.split('\n')[0];
+          const r = extractFromRaw(s);
+          if(r && r.code){
+            setCode(r.code, r.decodedFrom
+              ? 'Captured and decoded ' + r.code.length + ' characters'
+              : 'Captured ' + r.code.length + ' characters');
+          } else {
+            markInvalid(r && r.error);
+          }
+        });
+        return;
+      }
+    }
+
+    markInvalid(result && result.error);
+  });
+
+  pasteGo.addEventListener('click', ()=>{
+    const result = extractFromRaw(pasteInput.value);
+    if(result && result.code){
+      setCode(result.code, result.decodedFrom ? 'Loaded and decoded from pasted code' : 'Loaded from pasted code');
+    } else {
+      markInvalid(result && result.error);
+    }
+  });
+
+  const fDesc = document.getElementById('fDesc');
+  const descField = document.getElementById('descField');
+  const aiBtn = document.getElementById('aiBtn');
+  const aiStatus = document.getElementById('aiStatus');
+
+  [optAuto, optMenu].forEach(opt=>{
+    opt.addEventListener('click', ()=>{
+      optAuto.classList.toggle('checked', opt === optAuto);
+      optMenu.classList.toggle('checked', opt === optMenu);
+      render();
+    });
+  });
+
+  [fName, fMatch, fRunAt, fDesc].forEach(el=>{
+    el.addEventListener('input', render);
+    el.addEventListener('change', render);
+  });
+
+  aiBtn.addEventListener('click', async ()=>{
+    if(!extractedCode){
+      aiStatus.textContent = 'Load some code first';
+      return;
+    }
+    aiBtn.disabled = true;
+    aiStatus.textContent = 'Reading the code…';
+
+    const prompt = `You convert browser bookmarklets into Tampermonkey userscripts. Analyze the JavaScript below and respond with ONLY a raw JSON object (no markdown fences, no commentary before or after) with exactly these keys:
+{
+  "name": short descriptive script name, a few words,
+  "description": one plain sentence describing what the code does,
+  "match": a Tampermonkey @match pattern such as "*://*.example.com/*" if the code clearly targets a specific site (via hostnames, URLs, or site-specific DOM selectors/class names found in the code), otherwise "*://*/*",
+  "risk_notes": one short sentence warning the user about anything worth double-checking before letting this run automatically on every matching page load (e.g. it submits a form, clicks a specific element that may not exist elsewhere, redirects, deletes something, or reads sensitive fields). If nothing stands out, say "No obvious risks spotted — review the code yourself before enabling it everywhere."
+}
+
+Code:
+${extractedCode}`;
+
+    try{
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1000,
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+      const data = await response.json();
+      const textBlock = (data.content || []).find(b => b.type === 'text');
+      if(!textBlock) throw new Error('No text in response');
+      const clean = textBlock.text.replace(/```json|```/g, '').trim();
+      const parsed = JSON.parse(clean);
+
+      if(parsed.name) fName.value = parsed.name;
+      if(parsed.match) fMatch.value = parsed.match;
+      if(parsed.description){
+        fDesc.value = parsed.description;
+        descField.style.display = '';
+      }
+      aiStatus.textContent = parsed.risk_notes || 'Done';
+      render();
+    }catch(err){
+      aiStatus.textContent = "Couldn't analyze that — you can still fill the fields in by hand.";
+    }finally{
+      aiBtn.disabled = false;
+    }
+  });
+
+  function escapeForComment(s){
+    return String(s).replace(/\r?\n/g, ' ').slice(0, 200);
+  }
+
+  function indent(code){
+    return code.split('\n').map(l => '    ' + l).join('\n');
+  }
+
+  function buildScript(){
+    if(!extractedCode) return '';
+
+    const name = fName.value.trim() || 'My Bookmarklet';
+    const match = fMatch.value.trim() || '*://*/*';
+    const runAt = fRunAt.value;
+    const isMenu = optMenu.classList.contains('checked');
+
+    const grantLine = isMenu ? '// @grant        GM_registerMenuCommand' : '// @grant        none';
+
+    let body;
+    if(isMenu){
+      body =
+`    function run() {
+${indent(extractedCode)}
+    }
+
+    if (typeof GM_registerMenuCommand === 'function') {
+        GM_registerMenuCommand('${name.replace(/'/g,"\\'")}', run);
+    } else {
+        run();
+    }`;
+    } else {
+      body =
+`${indent(extractedCode)}`;
+    }
+
+    return `// ==UserScript==
+// @name         ${name}
+// @namespace    bookmarklet-to-tampermonkey
+// @version      1.0
+// @description  ${(fDesc.value.trim()) || ('Converted from a bookmarklet: ' + escapeForComment(extractedCode).slice(0,80))}
+// @match        ${match}
+// @run-at       ${runAt}
+${grantLine}
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+${body}
+})();
+`;
+  }
+
+  // Tokenize first, THEN escape + wrap each token. Doing find/replace on
+  // already-HTML-wrapped text (the old approach) let later regexes match
+  // inside earlier spans' own attributes, corrupting the markup.
+  function highlight(code){
+    const tokenRe = /(\/\/.*$)|('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")|\b(function|const|let|var|if|else|return|typeof|new|for|while)\b/gm;
+    let result = '';
+    let lastIndex = 0;
+    let m;
+    const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    while((m = tokenRe.exec(code)) !== null){
+      result += esc(code.slice(lastIndex, m.index));
+      if(m[1] !== undefined){
+        result += '<span class="com">' + esc(m[1]) + '</span>';
+      } else if(m[2] !== undefined){
+        result += '<span class="str">' + esc(m[2]) + '</span>';
+      } else if(m[3] !== undefined){
+        result += '<span class="kw">' + esc(m[3]) + '</span>';
+      }
+      lastIndex = tokenRe.lastIndex;
+    }
+    result += esc(code.slice(lastIndex));
+    return result;
+  }
+
+  function render(){
+    if(!extractedCode){
+      output.innerHTML = '<div class="empty-output">Drop a bookmarklet above to generate the script</div>';
+      return;
+    }
+    const script = buildScript();
+    output.dataset.raw = script;
+    output.innerHTML = highlight(script);
+  }
+
+  downloadBtn.addEventListener('click', ()=>{
+    const script = output.dataset.raw || buildScript();
+    if(!script) return;
+    const safeName = (fName.value.trim() || 'bookmarklet').replace(/[^a-z0-9\-_]+/gi,'-').toLowerCase();
+    const blob = new Blob([script], {type: 'text/javascript'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = safeName + '.user.js';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  copyBtn.addEventListener('click', async ()=>{
+    const script = output.dataset.raw || buildScript();
+    if(!script) return;
+    try{
+      await navigator.clipboard.writeText(script);
+      const original = copyBtn.textContent;
+      copyBtn.textContent = 'Copied';
+      setTimeout(()=>{ copyBtn.textContent = original; }, 1400);
+    }catch(e){
+      // fallback
+      const ta = document.createElement('textarea');
+      ta.value = script;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+  });
+})();
+</script>
+</body>
+</html>
